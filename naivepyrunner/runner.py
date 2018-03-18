@@ -7,7 +7,10 @@ from .pipeline import Pipeline
 from .pipelinefeeder import PipelineFeeder
 
 class Runner(object):
-    def __init__(self, handler_threads=-1, feeder_threads=1):
+    def __init__(self,
+        handler_threads=-1, feeder_threads=1, async_execution=False,
+        single_delay=False
+    ):
         if feeder_threads > handler_threads:
             feeder_threads = handler_threads
         self.pipes = []
@@ -16,6 +19,8 @@ class Runner(object):
         self.running = False;
         self.thread_count = handler_threads
         self.feeders = []
+        self.async_execution = async_execution
+        self.single_delay=False if async_execution else single_delay
 
         for i in range(feeder_threads):
             feeder = PipelineFeeder(self)
@@ -24,7 +29,7 @@ class Runner(object):
         if not self.unlimited:
             for i in range(handler_threads):
                 self.pipes.append(
-                    Pipeline(self.tasks)
+                    Pipeline(self.tasks, async=async_execution)
                 )
 
     def add_handler(self, handler):
@@ -77,23 +82,17 @@ class Runner(object):
             feeder.stop()
 
     def _run_single(self):
-        pipe = Pipeline(self.tasks)
+        pipe = Pipeline(self.tasks, async=self.async_execution)
         def add_tasks():
             while self.tasks:
                 task = self.tasks.pop()
-                (_, pos) = pipe.optimal_position(task, includeDelay=False)
+                (_, pos) = pipe.optimal_position(
+                    task, includeDelay=self.single_delay
+                )
                 pipe.push(task, pos)
-        add_tasks()
 
         while self.running:
-            task = pipe.step()
-            self.tasks.clear()
-            if task:
-                (_, pos) = pipe.optimal_position(task, includeDelay=False)
-                print('  ', task.task.hw, pos)
-                pipe.push(task, pos)
-            if not self.running:
-                break
             add_tasks()
+            pipe.step()
             if not self.tasks:
                 sleep(0.01)

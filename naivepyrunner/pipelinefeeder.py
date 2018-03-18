@@ -23,7 +23,7 @@ class PipelineFeeder(Thread):
 
         task = self.runner.tasks.pop()
         if self.runner.unlimited:
-            pipe = Pipeline()
+            pipe = Pipeline(async=False)
             pipe.push(task)
             if self.runner.running:
                 pipe.start()
@@ -41,9 +41,13 @@ class PipelineFeeder(Thread):
             return (0, -1)
 
         min_index = 0
-        (min_delay, min_pos) = self.runner.pipes[0].optimal_position(task)
+        (min_delay, min_pos) = self.runner.pipes[0].optimal_position(
+            task, includeDelay=not self.runner.async_execution
+        )
         for i in range(1, self.runner.thread_count):
-            (delay, pos) = self.runner.pipes[i].optimal_position(task)
+            (delay, pos) = self.runner.pipes[i].optimal_position(
+                task, includeDelay=not self.runner.async_execution
+            )
 
             if (delay < min_delay
                 or (delay == min_delay

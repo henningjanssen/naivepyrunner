@@ -5,7 +5,7 @@ from collections import deque
 from .task import Task
 
 class Pipeline(Thread):
-    def __init__(self, task_list=None, *args, **kwargs):
+    def __init__(self, task_list=None, async=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.walking = False
         self.tasks = deque()
@@ -16,6 +16,7 @@ class Pipeline(Thread):
         self._delays = []
         self._task_hash = "";
         self._delay_lock = False
+        self.async = async
 
     def run(self):
         self.walking = True
@@ -36,20 +37,14 @@ class Pipeline(Thread):
 
     def step(self):
         if not self.tasks:
-            return None
+            return
 
         if self.tasks[0].duetime <= time():
             task = self.tasks.popleft()
-            dur = task.average_execution_time
-            keep_alive = task.execute()
-            self.task_count -= 1
-            self.expected_duration -= dur
-            if keep_alive:
-                if self.finished_tasks is not None:
-                    self.finished_tasks.appendleft(task)
-                else:
-                    self.tasks.append(task)
-            return task
+            if self.async:
+                Thread(target=self._execute, args=(task,)).start()
+            else:
+                self._execute(task)
 
     def push(self, task, position=-1):
         if not isinstance(task, Task):
@@ -77,14 +72,13 @@ class Pipeline(Thread):
             return (-1, 0)
 
         (delays, tasks) = self._update_delays()
+        task_count = len(tasks)
         if not includeDelay:
-            for i in range(1, len(task_count)-1):
+            for i in range(1, task_count-1):
                 if (tasks[i].duetime > task.duetime
                     and tasks[i-1].duetime <= task.duetime):
                     return (0, i)
             return (0, -1)
-
-        task_count = len(tasks)
 
         # like what the fuck, but okay...
         for i in range(len(delays), task_count):
@@ -171,3 +165,14 @@ class Pipeline(Thread):
                 - task.duetime,
             0
         )
+
+    def _execute(self, task):
+        dur = task.average_execution_time
+        keep_alive = task.execute()
+        self.task_count -= 1
+        self.expected_duration -= dur
+        if keep_alive:
+            if self.finished_tasks is not None:
+                self.finished_tasks.appendleft(task)
+            else:
+                self.tasks.append(task)
