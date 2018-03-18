@@ -10,12 +10,16 @@ class Task(object):
 
     def execute(self):
         start = time()
-        self.duetime = self.task.execute()
+        sleep_time = self.task.execute()
+        self.duetime = sleep_time + time()
         self.probable_delay = 0
+
+        # update execution time
         ex_time = time()-start
-        if self.execution_times > 7:
-            self.execution_times.remove(0)
+        if len(self.execution_times) > 7:
+            self.execution_times.pop(0)
         self.execution_times.append(ex_time)
-        self.average_execution_time = sum(self.execution_times)
-            / len(self.execution_times)
-        return self
+        self.average_execution_time = (sum(self.execution_times)
+            / len(self.execution_times))
+
+        return sleep_time >= 0
