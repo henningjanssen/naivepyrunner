@@ -8,7 +8,7 @@ def readme():
         return f.read()
 
 setup(name='naivepyrunner',
-      version='0.1.1',
+      version='0.1.2',
       description='Naive timed execution of custom handlers in multiple threads',
       long_description=readme(),
       long_description_content_type='text/markdown',
@@ -19,7 +19,7 @@ setup(name='naivepyrunner',
         'Programming Language :: Python :: 3.5',
         'Topic :: Utilities'
       ],
-      python='>=3.5',
+      python_requires='>=3.5',
       url='http://github.com/henningjanssen/naivepyrunner',
       author='Henning Janßen',
       author_email='development@henning-janssen.net',
