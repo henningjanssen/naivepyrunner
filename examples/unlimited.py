@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from random import randint
 from naivepyrunner import Runner
 from helloworldhandler import HelloWorld
