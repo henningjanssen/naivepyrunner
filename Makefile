@@ -1,4 +1,4 @@
-all: sdist wheel
+build: sdist wheel
 
 wheel:
 	python setup.py bdist_wheel
@@ -6,5 +6,7 @@ wheel:
 sdist:
 	python setup.py sdist
 
-upload:
+publish:
 	twine upload dist/*
+
+all: build publish
