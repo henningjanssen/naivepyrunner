@@ -31,6 +31,23 @@ Clone this repo and build it yourself:
   make
 ```
 
+## Docker
+Build it
+``` bash
+# build it yourself
+docker build -t naivepyrunner .
+docker run -v$PWD:/app naivepyrunner python myapp.py
+# or use the prebuilt container
+docker run -v$PWD:/app henningj/naivepyrunner python myapp.py
+```
+
+Extend your Dockerfile:
+```Dockerfile
+FROM henningj/naivepyrunner:latest
+[...]
+python myapp.py
+
+```
 # Usage
 
 # License

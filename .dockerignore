@@ -1,0 +1,13 @@
+.dockerignore
+.git
+.gitignore
+Dockerfile
+Makefile
+README
+LICENSE
+*.pyc
+examples/
+/dist/
+/build
+/*.egg-info
+__pycache__/
