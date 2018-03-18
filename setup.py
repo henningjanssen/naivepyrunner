@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from setuptools import setup
 
 def readme():
@@ -5,15 +8,15 @@ def readme():
         return f.read()
 
 setup(name='naivepyrunner',
-      version='0.1',
+      version='0.1.1',
       description='Naive timed execution of custom handlers in multiple threads',
       long_description=readme(),
       long_description_content_type='text/markdown',
       keywords='schedule scheduling cron timing parallel',
       classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 7 - Inactive',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.5',
         'Topic :: Utilities'
       ],
       python='>=3.5',
