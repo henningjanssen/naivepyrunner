@@ -1,9 +1,17 @@
 from time import time
 
 class Job(object):
-    def __init__(self, task, duetime):
+    def __init__(self, task, duetime, *arg, **kwargs):
         self.task = task
         self.duetime = duetime
+
+    def execute(self):
+        this.duetime = self.task.execute() + time()
+
+
+class ChronoJob(object):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.execution_times = []
         self.average_execution_time = 0
         self.probable_delay = 0
