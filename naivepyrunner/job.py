@@ -6,10 +6,18 @@ class Job(object):
         self.duetime = duetime
 
     def execute(self):
-        this.duetime = self.task.execute() + time()
+        sleep_time = self.task.execute()
+        if sleep_time < 0:
+            return False
+
+        self.duetime = sleep_time + time()
+        return True
+
+    def is_due(self):
+        return self.duetime <= time()
 
 
-class ChronoJob(object):
+class ChronoJob(Job):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.execution_times = []

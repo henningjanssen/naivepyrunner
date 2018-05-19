@@ -5,7 +5,7 @@ from naivepyrunner import Runner
 from helloworldhandler import HelloWorld
 
 if __name__ == "__main__":
-    runner = Runner(handler_threads=-1, feeder_threads=0)
+    runner = Runner(mode=Runner.Mode.UNLIMITED)
     for i in range(60):
-        runner.add_handler(HelloWorld(randint(1, 30), i))
+        runner.add_task(HelloWorld(randint(1, 30), i))
     runner.run()
