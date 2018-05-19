@@ -2,7 +2,7 @@
 
 from random import randint
 from naivepyrunner import Runner
-from helloworldhandler import HelloWorld
+from helloworldtask import HelloWorld
 
 if __name__ == "__main__":
     runner = Runner(mode=Runner.Mode.UNLIMITED)

@@ -1,12 +1,13 @@
 from time import sleep, time
 from collections import deque
 from enum import Enum
+from threading import Thread
 
 from .job import Job
 from .task import Task
 from .queue import Queue, DuetimeQueue
 from .queuetransposer import QueueTransposer
-from .worker import Worker
+from .worker import Worker, DedicatedWorker
 
 class RunnerMode(Enum):
     SEQUENTIAL = 0
@@ -93,18 +94,22 @@ class SharedQueueRunner(Runner):
 
 class UnlimitedRunner(Runner):
     def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.to_enqueue = None
         self.queue = None
         self.threads = []
 
     def add_task(self, task):
         worker = DedicatedWorker(task)
-        thread = Thread(worker)
+        thread = Thread(target=worker.run)
         if self.running:
             thread.start()
-        this.threads.append(thread)
+        self.threads.append(thread)
 
     def run(self):
+        self.running = True
+        for thread in self.threads:
+            thread.start()
         while self.running:
             sleep(0.1)
 

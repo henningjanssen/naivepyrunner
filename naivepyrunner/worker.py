@@ -1,9 +1,9 @@
-from time import sleep
+from time import sleep, time
 from collections import deque
 from queue import Queue
 
 # For DedicatedWorker
-from threading import Lock
+from threading import Lock, Timer
 
 from .task import Task
 
@@ -34,26 +34,25 @@ class Worker(object):
 class DedicatedWorker(Worker):
     def __init__(self, task, *args, **kwargs):
         self.task = task
-        self.lock = Lock()
         self.running = False
-        self.timer = None
+        self.next_execution = time()
 
     def run(self):
         self.running = True
         while self.running:
+            if self.next_execution <= time():
+                if not self.step():
+                    self.running = False
+                    continue
             sleep(0.1)
 
     def step(self):
-        with self.lock.acquire():
-            sleep_time = self.task.execute()
-            if sleep_time >= 0:
-                self.timer = Timer(sleep_time, self.step)
+        sleep_time = self.task.execute()
+        if sleep_time < 0:
+            return False
+        self.next_execution = time() + sleep_time
+        return True
 
     def stop(self):
-        if self.lock.acquire(blocking=False):
-            self.running = False
-            if self.timer:
-                self.timer.cancel()
-            self.lock.release()
-        else:
-            self.task.stop()
+        self.running = False
+        self.task.stop()
