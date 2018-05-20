@@ -77,5 +77,5 @@ class DuetimeQueue(Queue):
         if not inserted:
             self.queue.appendleft(job)
 
-class TimeboxQueue(object):
+class TimeboxQueue(Queue):
     pass
