@@ -16,17 +16,15 @@ class Worker(object):
     def run(self):
         self.running = True
         while self.running:
-            self.step()
+            if self.step():
+                continue
+            sleep(0.1)
 
     def step(self):
-        def step(self):
-            job = None
-            with self.queue.lock():
-                if self.queue.is_first_due():
-                    job = self.queue().pop()
-
-            if job and job.execute():
-                self.tasks.insert(job)
+        job = self.queue.pop_if_due()
+        if job and job.execute():
+            self.tasks.insert(job)
+        return bool(job)
 
     def stop(self):
         self.running = False

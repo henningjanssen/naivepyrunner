@@ -1,19 +1,22 @@
 from time import sleep
+from threading import Thread
 
-class QueueTransposer(object):
+class QueueTransposer(Thread):
     def __init__(self, source, target, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.source = source
         self.target = target
         self.running = False
 
     def run(self):
+        self.running = True
         while self.running:
             self.transpose_all()
             sleep(0.1)
 
-    def transpose_all():
-        while True:
-            element = self.source.pop
+    def transpose_all(self):
+        while self.running:
+            element = self.source.pop()
             if not element:
                 break
             self.target.insert(element)

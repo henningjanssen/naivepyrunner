@@ -12,14 +12,14 @@ from .worker import Worker, DedicatedWorker
 class Runner(object):
     class Mode(Enum):
         SEQUENTIAL = 0
-        SHARED = 1
+        SHARED_QUEUE = 1
         UNLIMITED = 2
 
     def __new__(cls, mode=None, *args, **kwargs):
         if mode is None:
             mode = Runner.Mode.SEQUENTIAL
 
-        if mode is Runner.Mode.SHARED:
+        if mode is Runner.Mode.SHARED_QUEUE:
             return super().__new__(SharedQueueRunner, *args, **kwargs)
         elif mode == Runner.Mode.UNLIMITED:
             return super().__new__(UnlimitedRunner, *args, **kwargs)
@@ -70,21 +70,24 @@ class SharedQueueRunner(Runner):
             from multiprocessing import cpu_count
             worker_pool_size = cpu_count()
 
-        self.tasks = DuetimeQueue()
-        self.workers = [Worker() for i in worker_pool_size]
-        self.transposer = QueueTransposer(source=kself.tasks, target=self.queue)
+        self.tasks = Queue()
+        self.workers = [Worker(queue=self.queue, tasks=self.tasks)
+            for i in range(worker_pool_size)
+        ]
+        self.transposer = QueueTransposer(source=self.tasks, target=self.queue)
 
     def run(self):
         self.running = True
         self.transposer.start()
         for worker in self.workers:
-            worker.start()
+            Thread(target=worker.run).start()
         self.transposer.run()
 
     def stop(self):
         super().stop()
         for worker in self.workers:
             worker.stop()
+            worker.join()
         self.transposer.stop()
 
 class UnlimitedRunner(Runner):
