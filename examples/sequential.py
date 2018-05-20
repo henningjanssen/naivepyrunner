@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from random import randint
-from naivepyrunner import Runner, RunnerMode
+from naivepyrunner import Runner
 from helloworldtask import HelloWorld
 
 if __name__ == "__main__":

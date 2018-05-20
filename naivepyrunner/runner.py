@@ -9,11 +9,6 @@ from .queue import Queue, DuetimeQueue
 from .queuetransposer import QueueTransposer
 from .worker import Worker, DedicatedWorker
 
-class RunnerMode(Enum):
-    SEQUENTIAL = 0
-    SHARED = 1
-    UNLIMITED = 2
-
 class Runner(object):
     class Mode(Enum):
         SEQUENTIAL = 0

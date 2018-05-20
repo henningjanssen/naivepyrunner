@@ -1,4 +1,4 @@
-from .runner import Runner, RunnerMode
+from .runner import Runner
 from .task import Task
 
-all = [Runner, RunnerMode, Task]
+all = [Runner, Task]
