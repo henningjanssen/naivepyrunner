@@ -48,7 +48,7 @@ class Runner(object):
 
 class SequentialRunner(Runner):
     def __init__(self, *args, **kwargs):
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.queue = DuetimeQueue()
         self.to_enqueue = None
 
