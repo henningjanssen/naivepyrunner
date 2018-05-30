@@ -8,7 +8,7 @@ def readme():
         return f.read()
 
 setup(name='naivepyrunner',
-      version='0.1.3',
+      version='0.2.0',
       description='Naive timed execution of custom handlers in multiple threads',
       long_description=readme(),
       long_description_content_type='text/markdown',
