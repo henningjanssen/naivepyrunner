@@ -1,9 +1,9 @@
 from time import sleep, time
 from random import uniform
 
-from naivepyrunner import Handler
+from naivepyrunner import Task
 
-class HelloWorld(Handler):
+class HelloWorld(Task):
     def __init__(self, pause_center=0, hw = 0):
         self.pause_center = pause_center
         self.sleep_time = 0

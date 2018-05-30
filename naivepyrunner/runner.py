@@ -1,98 +1,119 @@
 from time import sleep, time
 from collections import deque
+from enum import Enum
+from threading import Thread
 
-from .handler import Handler
+from .job import Job
 from .task import Task
-from .pipeline import Pipeline
-from .pipelinefeeder import PipelineFeeder
+from .queue import Queue
+from .queuetransposer import QueueTransposer
+from .worker import Worker, DedicatedWorker
 
-class Runner(object):
-    def __init__(self,
-        handler_threads=-1, feeder_threads=1, async_execution=False,
-        single_delay=False
-    ):
-        if feeder_threads > handler_threads:
-            feeder_threads = handler_threads
-        self.pipes = []
-        self.tasks = deque()
-        self.unlimited = handler_threads < 0
-        self.running = False;
-        self.thread_count = handler_threads
-        self.feeders = []
-        self.async_execution = async_execution
-        self.single_delay=False if async_execution else single_delay
+class MetaRunner(type):
+    def __call__(cls, mode=None, *args, **kwargs):
+        if mode is None:
+            mode = Runner.Mode.SEQUENTIAL
 
-        for i in range(feeder_threads):
-            feeder = PipelineFeeder(self)
-            self.feeders.append(feeder)
+        runner = None
+        if mode is Runner.Mode.SHARED_QUEUE:
+            runner = Runner.__new__(SharedQueueRunner, *args, **kwargs)
+        elif mode == Runner.Mode.UNLIMITED:
+            runner = Runner.__new__(UnlimitedRunner, *args, **kwargs)
+        else:
+            runner = Runner.__new__(SequentialRunner, *args, **kwargs)
+        runner.__init__(*args, **kwargs)
+        return runner
 
-        if not self.unlimited:
-            for i in range(handler_threads):
-                self.pipes.append(
-                    Pipeline(self.tasks, async=async_execution)
-                )
+class Runner(object, metaclass=MetaRunner):
+    class Mode(Enum):
+        SEQUENTIAL = 0
+        SHARED_QUEUE = 1
+        UNLIMITED = 2
 
-    def add_handler(self, handler):
-        if not isinstance(handler, Handler):
-            raise Exception('handler is not a Handler but a '+str(type(handler)))
-        task = Task(
-            task = handler,
+    def __init__(self, queue_mode=Queue.Mode.DUETIME, *args, **kwargs):
+        self.queue = Queue(queue_mode)
+        self.to_enqueue = Queue(Queue.Mode.FIFO)
+        self.running = False
+
+    def add_task(self, task):
+        if not isinstance(task, Task):
+            raise Exception('task is not a Task but a '+str(type(task)))
+        job = Job(
+            task = task,
             duetime = time()
         )
-        self.tasks.append(task)
-        if self.unlimited:
-            # feed it instantly
-            PipelineFeeder(self).feed()
+        self.queue.insert(job)
 
-    def join(self):
-        if self.running:
-            self.stop()
-        while self.pipes:
-            self.pipes.pop().join()
-        while self.feeder:
-            self.feeder.pop().join()
+    def run(self):
+        pass
 
-    def start(self):
-        self.run(blocking=False)
-
-    def run(self, blocking=True):
-        self.running = True
-        for pipe in self.pipes:
-            pipe.start()
-
-        for feeder in self.feeders:
-            feeder.start()
-
-        if len(self.feeders) == 0:
-            if self.thread_count == 0:
-                # make everything in-place
-                self._run_single()
-            else:
-                feeder = PipelineFeeder(self)
-                if blocking:
-                    feeder.run()
-                else:
-                    feeder.start()
-
-    def stop():
+    def stop(self):
         self.running = False
-        for pipe in self.pipes:
-            pipe.stop()
-        for feeder in self.feeders:
-            feeder.stop()
 
-    def _run_single(self):
-        pipe = Pipeline(self.tasks, async=self.async_execution)
-        def add_tasks():
-            while self.tasks:
-                task = self.tasks.pop()
-                (_, pos) = pipe.optimal_position(
-                    task, includeDelay=self.single_delay
-                )
-                pipe.push(task, pos)
+class SequentialRunner(Runner):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.to_enqueue = None
 
+    def run(self):
+        self.running = True
         while self.running:
-            add_tasks()
-            pipe.step()
-            if not self.tasks:
+            job = self.queue.pop_if_due()
+
+            if job and job.execute():
+                self.queue.insert(job)
+
+            if not job:
                 sleep(0.01)
+
+class SharedQueueRunner(Runner):
+    def __init__(self, worker_pool_size=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not worker_pool_size:
+            from multiprocessing import cpu_count
+            worker_pool_size = cpu_count()
+
+        self.tasks = Queue(Queue.Mode.FIFO)
+        self.workers = [Worker(queue=self.queue, tasks=self.tasks)
+            for i in range(worker_pool_size)
+        ]
+        self.transposer = QueueTransposer(source=self.tasks, target=self.queue)
+
+    def run(self):
+        self.running = True
+        self.transposer.start()
+        for worker in self.workers:
+            Thread(target=worker.run).start()
+        self.transposer.run()
+
+    def stop(self):
+        super().stop()
+        for worker in self.workers:
+            worker.stop()
+            worker.join()
+        self.transposer.stop()
+
+class UnlimitedRunner(Runner):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.to_enqueue = None
+        self.queue = None
+        self.threads = []
+
+    def add_task(self, task):
+        worker = DedicatedWorker(task)
+        thread = Thread(target=worker.run)
+        if self.running:
+            thread.start()
+        self.threads.append(thread)
+
+    def run(self):
+        self.running = True
+        for thread in self.threads:
+            thread.start()
+        while self.running:
+            sleep(0.1)
+
+    def stop(self):
+        for thread in self.threads:
+            thread.join()
