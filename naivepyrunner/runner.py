@@ -9,22 +9,26 @@ from .queue import Queue
 from .queuetransposer import QueueTransposer
 from .worker import Worker, DedicatedWorker
 
-class Runner(object):
+class MetaRunner(type):
+    def __call__(cls, mode=None, *args, **kwargs):
+        if mode is None:
+            mode = Runner.Mode.SEQUENTIAL
+
+        runner = None
+        if mode is Runner.Mode.SHARED_QUEUE:
+            runner = Runner.__new__(SharedQueueRunner, *args, **kwargs)
+        elif mode == Runner.Mode.UNLIMITED:
+            runner = Runner.__new__(UnlimitedRunner, *args, **kwargs)
+        else:
+            runner = Runner.__new__(SequentialRunner, *args, **kwargs)
+        runner.__init__(*args, **kwargs)
+        return runner
+
+class Runner(object, metaclass=MetaRunner):
     class Mode(Enum):
         SEQUENTIAL = 0
         SHARED_QUEUE = 1
         UNLIMITED = 2
-
-    def __new__(cls, mode=None, *args, **kwargs):
-        if mode is None:
-            mode = Runner.Mode.SEQUENTIAL
-
-        if mode is Runner.Mode.SHARED_QUEUE:
-            return super().__new__(SharedQueueRunner, *args, **kwargs)
-        elif mode == Runner.Mode.UNLIMITED:
-            return super().__new__(UnlimitedRunner, *args, **kwargs)
-
-        return super().__new__(SequentialRunner, *args, **kwargs)
 
     def __init__(self, queue_mode=Queue.Mode.DUETIME, *args, **kwargs):
         self.queue = Queue(queue_mode)

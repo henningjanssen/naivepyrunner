@@ -4,22 +4,26 @@ from threading import Lock
 from time import time
 import heapq
 
-class Queue(object):
+class MetaQueue(type):
+    def __call__(cls, mode=None, *args, **kwargs):
+        if mode is None:
+            mode = Queue.Mode.DUETIME
+
+        queue = None
+        if mode is Queue.Mode.DUETIME:
+            queue = Queue.__new__(DuetimeQueue, *args, **kwargs)
+        elif mode is Queue.Mode.MIN_DELAY:
+            queue = Queue.__new__(TimeboxQueue, *args, **kwargs)
+        else:
+            queue = Queue.__new__(cls, *args, **kwargs)
+        queue.__init__(*args, **kwargs)
+        return queue
+
+class Queue(object, metaclass=MetaQueue):
     class Mode(Enum):
         FIFO = 0,
         DUETIME = 1,
         MIN_DELAY = 2
-
-    def __new__(cls, mode=None, *args, **kwargs):
-        if mode is None:
-            mode = Queue.Mode.DUETIME
-
-        if mode is Queue.Mode.DUETIME:
-            return super().__new__(DuetimeQueue, *args, **kwargs)
-        elif mode is Queue.Mode.MIN_DELAY:
-            return super().__new__(TimeboxQueue, *args, **kwargs)
-
-        return super().__new__(Queue, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         self.queue = deque()
