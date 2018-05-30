@@ -10,7 +10,7 @@ class Queue(object):
         DUETIME = 1,
         MIN_DELAY = 2
 
-    def __new__(self, mode=None, *args, **kwargs):
+    def __new__(cls, mode=None, *args, **kwargs):
         if mode is None:
             mode = Queue.Mode.DUETIME
 
