@@ -16,6 +16,7 @@ class Queue(object):
         with self.lock:
             if self.queue:
                 return self.queue[0].is_due()
+            return False
 
     def pop(self):
         try:
