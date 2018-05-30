@@ -5,7 +5,7 @@ from threading import Thread
 
 from .job import Job
 from .task import Task
-from .queue import Queue, DuetimeQueue
+from .queue import Queue
 from .queuetransposer import QueueTransposer
 from .worker import Worker, DedicatedWorker
 
@@ -26,9 +26,9 @@ class Runner(object):
 
         return super().__new__(SequentialRunner, *args, **kwargs)
 
-    def __init__(self, *args, **kwargs):
-        self.queue = Queue()
-        self.to_enqueue = Queue()
+    def __init__(self, queue_mode=Queue.Mode.DUETIME, *args, **kwargs):
+        self.queue = Queue(queue_mode)
+        self.to_enqueue = Queue(Queue.Mode.FIFO)
         self.running = False
 
     def add_task(self, task):
@@ -49,7 +49,6 @@ class Runner(object):
 class SequentialRunner(Runner):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.queue = DuetimeQueue()
         self.to_enqueue = None
 
     def run(self):
@@ -70,7 +69,7 @@ class SharedQueueRunner(Runner):
             from multiprocessing import cpu_count
             worker_pool_size = cpu_count()
 
-        self.tasks = DuetimeQueue()
+        self.tasks = Queue(Queue.Mode.FIFO)
         self.workers = [Worker(queue=self.queue, tasks=self.tasks)
             for i in range(worker_pool_size)
         ]

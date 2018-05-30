@@ -1,9 +1,26 @@
 from collections import deque
+from enum import Enum
 from threading import Lock
 from time import time
 import heapq
 
 class Queue(object):
+    class Mode(Enum):
+        FIFO = 0,
+        DUETIME = 1,
+        MIN_DELAY = 2
+
+    def __new__(self, mode=None, *args, **kwargs):
+        if mode is None:
+            mode = Queue.Mode.DUETIME
+
+        if mode is Queue.Mode.DUETIME:
+            return super().__new__(DuetimeQueue, *args, **kwargs)
+        elif mode is Queue.Mode.MIN_DELAY:
+            return super().__new__(TimeboxQueue, *args, **kwargs)
+
+        return super().__new__(Queue, *args, **kwargs)
+
     def __init__(self, *args, **kwargs):
         self.queue = deque()
         self.lock = Lock()

@@ -1,4 +1,7 @@
+from .queue import Queue
 from .runner import Runner
 from .task import Task
 
-all = [Runner, Task]
+QueueMode = Queue.Mode
+
+all = [QueueMode, Runner, Task]
