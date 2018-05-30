@@ -70,7 +70,7 @@ class SharedQueueRunner(Runner):
             from multiprocessing import cpu_count
             worker_pool_size = cpu_count()
 
-        self.tasks = Queue()
+        self.tasks = DuetimeQueue()
         self.workers = [Worker(queue=self.queue, tasks=self.tasks)
             for i in range(worker_pool_size)
         ]
